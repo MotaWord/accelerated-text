@@ -23,7 +23,7 @@ phases:
       # Prepare Docker
       - echo Logging in to Amazon ECR...
       - aws --version && docker version
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${$AWS_DEFAULT_REGION}.amazonaws.com
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
       - COMMIT_HASH=$(cat COMMIT_HASH)
       - COMMIT_TAG=${DEFAULT_IMAGE_TAG:=latest}-${COMMIT_HASH:=latest}-$(date +%s)
   build:
