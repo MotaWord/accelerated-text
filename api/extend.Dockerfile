@@ -1,5 +1,5 @@
 FROM acctext/api:latest
 
-COPY ./config /opt/config
-COPY ./dictionary /opt/dictionary
-COPY ./document-plans /opt/document-plans
+COPY ./resources/config /opt/config
+COPY ./resources/dictionary /opt/dictionary
+COPY ./resources/document-plans /opt/document-plans
