@@ -13,6 +13,7 @@ env:
     ACC_TEXT_DATA_FILES_BUCKET: http://localhost:3001/accelerated-text-data-files
     DOCKER_HUB_USERNAME:
     DOCKER_HUB_KEY:
+    AWS_ACCOUNT_ID:
 
 phases:
   pre_build:
@@ -22,7 +23,7 @@ phases:
       # Prepare Docker
       - echo Logging in to Amazon ECR...
       - aws --version && docker version
-      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${$AWS_DEFAULT_REGION}.amazonaws.com
       - COMMIT_HASH=$(cat COMMIT_HASH)
       - COMMIT_TAG=${DEFAULT_IMAGE_TAG:=latest}-${COMMIT_HASH:=latest}-$(date +%s)
   build:
