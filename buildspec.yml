@@ -1,0 +1,47 @@
+version: 0.2
+
+env:
+  variables:
+    API_REPOSITORY_URI:
+    FRONTEND_REPOSITORY_URI:
+    API_ECS_CONTAINER_NAME:
+    FRONTEND_ECS_CONTAINER_NAME:
+    DEFAULT_IMAGE_TAG: staging
+    ACC_TEXT_API_URL: http://localhost:3001
+    BUILDKIT_INLINE_CACHE: 1
+    ACC_TEXT_GRAPHQL_URL: http://localhost:3001/_graphql
+    ACC_TEXT_DATA_FILES_BUCKET: http://localhost:3001/accelerated-text-data-files
+    DOCKER_HUB_USERNAME:
+    DOCKER_HUB_KEY:
+
+phases:
+  pre_build:
+    commands:
+      # Log into Docker Hub
+      - docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_KEY}
+      # Prepare Docker
+      - echo Logging in to Amazon ECR...
+      - aws --version && docker version
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - COMMIT_HASH=$(cat COMMIT_HASH)
+      - COMMIT_TAG=${DEFAULT_IMAGE_TAG:=latest}-${COMMIT_HASH:=latest}-$(date +%s)
+  build:
+    commands:
+      - echo Docker build started on `date`
+      - echo Build API container extending from original
+      - cd ./api
+      - docker build -f extend.Dockerfile -t $API_REPOSITORY_URI:${DEFAULT_IMAGE_TAG:=latest} -t $API_REPOSITORY_URI:${COMMIT_TAG:=latest} --build-arg BUILDKIT_INLINE_CACHE=1 .
+      - cd ../front-end
+      - docker build -f Dockerfile.builder -t $FRONTEND_REPOSITORY_URI:${DEFAULT_IMAGE_TAG:=latest} -t $FRONTEND_REPOSITORY_URI:${COMMIT_TAG:=latest} --build-arg BUILDKIT_INLINE_CACHE=${BUILDKIT_INLINE_CACHE:=1} --build-arg ACC_TEXT_API_URL=${ACC_TEXT_API_URL:=http://localhost:3001} --build-arg ACC_TEXT_GRAPHQL_URL=${ACC_TEXT_GRAPHQL_URL:=http://localhost:3001/_graphql} --build-arg ACC_TEXT_DATA_FILES_BUCKET=${ACC_TEXT_DATA_FILES_BUCKET:=http://localhost:3001/accelerated-text-data-files} .
+  post_build:
+    commands:
+      - echo Builds completed on `date`
+      - echo Pushing the Docker images for API and frontend...
+      - docker push $API_REPOSITORY_URI:${DEFAULT_IMAGE_TAG:=latest}
+      - docker push $API_REPOSITORY_URI:${COMMIT_TAG:=latest}
+      - docker push $FRONTEND_REPOSITORY_URI:${DEFAULT_IMAGE_TAG:=latest}
+      - docker push $FRONTEND_REPOSITORY_URI:${COMMIT_TAG:=latest}
+      - printf '[{"name":"%s","imageUri":"%s"},{"name":"%s","imageUri":"%s"}]' ${API_ECS_CONTAINER_NAME} $API_REPOSITORY_URI:${COMMIT_TAG:=latest} ${FRONTEND_ECS_CONTAINER_NAME} $FRONTEND_REPOSITORY_URI:${COMMIT_TAG:=latest} > imagedefinitions.json
+artifacts:
+  files:
+    - imagedefinitions.json
