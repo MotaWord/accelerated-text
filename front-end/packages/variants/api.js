@@ -3,6 +3,32 @@ import * as nlgApi      from '../nlg-api/';
 
 const POLL_INTERVAL =   500;
 const PREFIX =          '/nlg';
+var LAST_STATUS_CHECK = 0;
+var LAST_RESULT = true;
+
+export const checkStatus = async () => {
+    let now = new Date().valueOf();
+    if(now - LAST_STATUS_CHECK < POLL_INTERVAL * 5){
+        return LAST_RESULT;
+    }
+
+    LAST_STATUS_CHECK = new Date().valueOf();
+    try {
+        const result = await nlgApi.GET("/status");
+
+        if( result.color == "green" ) {
+            LAST_RESULT = true;
+        }
+        else {
+            LAST_RESULT = false;
+        }
+        return LAST_RESULT;
+    } catch ( err ) {
+        console.log(err);
+        LAST_RESULT = false;
+        return false;
+    }
+};
 
 
 const checkResult = async ( resultId, resolve, reject ) => {
@@ -23,10 +49,9 @@ const checkResult = async ( resultId, resolve, reject ) => {
 };
 
 
-export const getVariants = async ({ dataId, documentPlanId, readerFlagValues }) => {
-
+export const getVariants = async ({ dataRow, documentPlanId, readerFlagValues }) => {
     const { resultId } = await nlgApi.POST( `${ PREFIX }/`, {
-        dataId,
+        dataRow,
         documentPlanId,
         readerFlagValues
     });

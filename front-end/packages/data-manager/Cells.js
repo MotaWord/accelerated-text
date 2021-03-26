@@ -1,5 +1,6 @@
 import classnames           from 'classnames';
 import { h }                from 'preact';
+import { useEffect }        from 'preact/hooks';
 import { pathOr }           from 'ramda';
 
 import CellBlock            from '../nlg-blocks/Cell';
@@ -12,31 +13,59 @@ import {
     Info,
     Loading,
 }   from '../ui-messages/';
-import { getDataFile }      from '../graphql/queries.graphql';
+import { getRelevantSamples }      from '../graphql/queries.graphql';
 import { QA }               from '../tests/constants';
 import RowSelector          from '../row-selector/RowSelector';
 
 import S                    from './Cells.sass';
+import SampleAlgorithm      from './SampleAlgorithm';
 
 
 export default composeQueries({
-    getDataFile:    [ getDataFile, { id: 'id' }],
+    getRelevantSamples:    [ getRelevantSamples, { id: 'id', method: 'method' }],
 })(({
     className,
-    getDataFile: {
+    method,
+    getRelevantSamples: {
         error,
-        getDataFile,
+        getRelevantSamples,
         loading,
+        refetch
     },
     onChangeRow,
     selectedRow,
+    onChangeMethod,
+    onChangePreviewData,
 }) => {
 
+    useEffect(() => {
+        onChangeData(0);
+    }, [getRelevantSamples]);
+
     const valueDict = dataFieldsToObj(
-        pathOr([], [ 'records', selectedRow, 'fields' ], getDataFile ),
+        pathOr([], [ 'records', selectedRow, 'fields' ], getRelevantSamples ),
     );
 
+    const onChangeData = (idx) => {
+        if(getRelevantSamples === undefined){
+            return;
+        }
+        const data = Object.assign({}, ...getRelevantSamples.records[idx].fields.map( f => ({[f.fieldName]: f.value}) ));
+        onChangePreviewData(data);
+        onChangeRow(idx);
+    };
+
+    const refetchData = (method) => {
+        onChangeMethod(method);
+        refetch();
+    };
+
     return (
+    <div>
+        <SampleAlgorithm
+                onChange={ refetchData }
+                value={ method }
+         />
         <table className={ classnames( S.className, className, QA.DATA_MANAGER_CELL_TABLE ) }>
             <thead>
                 <tr>
@@ -48,12 +77,12 @@ export default composeQueries({
                             ? <Error message={ error } />
                         : loading
                             ? <Loading message="Loading cell values" />
-                        : getDataFile && getDataFile.records
+                        : getRelevantSamples && getRelevantSamples.records
                             ? <RowSelector
                                 nextClassName={ QA.DATA_MANAGER_ROW_NEXT }
                                 previousClassName={ QA.DATA_MANAGER_ROW_PREVIOUS }
-                                onChange={ onChangeRow }
-                                rows={ getDataFile.records }
+                                onChange={ onChangeData }
+                                rows={ getRelevantSamples.records }
                                 selectClassName={ classnames( S.selectRow, QA.DATA_MANAGER_ROW_SELECT ) }
                                 selected={ selectedRow }
                             />
@@ -61,7 +90,7 @@ export default composeQueries({
                     }</th>
                 </tr>
             </thead>
-            <tbody>{ getDataFile && getDataFile.fieldNames.map(( name, i ) =>
+            <tbody>{ getRelevantSamples && getRelevantSamples.fieldNames.map(( name, i ) =>
                 <tr key={ i }>
                     <td className={ S.dragInBlock }>
                         <DragInBlock
@@ -86,5 +115,6 @@ export default composeQueries({
                 </tr>
             )}</tbody>
         </table>
+     </div>
     );
 });

@@ -15,7 +15,7 @@ nav:
         - Creating a dictionary: dictionary.md
         - Adding operations: operations.md
         - Selecting languages: languages.md
-        - Exporting data: export.md
+        - Exporting: export.md
     - Advanced Topics:
         - Blocks: blocks.md
         - Reader Model: reader-models.md
@@ -23,6 +23,7 @@ nav:
         - Deployment: deployment.md
         - NLG API: nlg-api.md
         - GraphQL API: graphql.md
+    - Troubleshooting: troubleshooting.md
     - Contributing: contributing.md
 markdown_extensions:
     - toc

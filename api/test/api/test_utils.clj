@@ -47,7 +47,7 @@
 (defn load-data-file [filename]
   (data-files/store!
     {:filename filename
-     :content  (slurp (format "test/resources/data-files/%s" filename))}))
+     :content  (io/file (format "test/resources/data-files/%s" filename))}))
 
 (defn load-document-plan [filename]
   (log/infof "Loading test document plan `%s`" filename)
@@ -69,14 +69,15 @@
           (< 10 retry-count) (throw (Exception. "Result was not ready after 10 seconds."))
           :else (do (Thread/sleep 1000) (recur (inc retry-count) (request!))))))))
 
-(defn generate-text [{:keys [document-plan-name data-file-name reader-flags]}]
-  (let [{:keys [status body]} (q "/nlg/" :post {:documentPlanId   (load-document-plan document-plan-name)
-                                                :readerFlagValues (or reader-flags {"Eng" true})
-                                                :dataId           (if (some? data-file-name)
-                                                                    (load-data-file data-file-name)
-                                                                    "")})]
+(defn generate-text [{:keys [document-plan-name data-file-name reader-flags async]}]
+  (let [{:keys [status body]} (q "/nlg/" :post (cond-> {:documentPlanId   (load-document-plan document-plan-name)
+                                                        :readerFlagValues (or reader-flags {"Eng" true})
+                                                        :dataId           (if (some? data-file-name)
+                                                                            (load-data-file data-file-name)
+                                                                            "")}
+                                                       (false? async) (assoc :async false)))]
     (when (= 200 status)
-      (get-result (:resultId body)))))
+      (if (false? async) body (get-result (:resultId body))))))
 
 (defn generate-text-bulk [{:keys [document-plan-name data-rows reader-flags]}]
   (let [{:keys [status body]} (q "/nlg/_bulk/" :post {:documentPlanId   (load-document-plan document-plan-name)

@@ -56,6 +56,8 @@ jobs:
   - job: api_integration_tests
     pool:
       vmImage: 'ubuntu-latest'
+    dependsOn:
+      - unit_test_backend
     steps:
       - task: DockerCompose@0
         displayName: Build Integration tests dependencies
@@ -71,10 +73,21 @@ jobs:
           projectName: $(Build.Repository.Name)
           dockerComposeCommand: up --remove-orphans --abort-on-container-exit --exit-code-from api
 
+      - script: |
+          python -m pip install --upgrade pip
+          pip install coverage
+        displayName: 'Install coverage'
+
+      - script: |
+          bash <(curl -s https://codecov.io/bash) -s api/.stats/coverage/api -F api
+        displayName: 'Upload to codecov.io'
+
 
   - job: core_integration_tests
     pool:
       vmImage: 'ubuntu-latest'
+    dependsOn:
+      - unit_test_backend
     steps:
       - task: DockerCompose@0
         displayName: Build Integration tests dependencies
@@ -89,6 +102,15 @@ jobs:
           dockerComposeFile: core/docker-compose.test.yml
           projectName: $(Build.Repository.Name)
           dockerComposeCommand: up --remove-orphans --abort-on-container-exit --exit-code-from core
+
+      - script: |
+          python -m pip install --upgrade pip
+          pip install coverage
+        displayName: 'Install coverage'
+
+      - script: |
+          bash <(curl -s https://codecov.io/bash) -s core/.stats/coverage/core -F core
+        displayName: 'Upload to codecov.io'
 
   - job: eval
     pool:
@@ -134,6 +156,7 @@ jobs:
           containerRegistry: dockerhub
           tags: |
             latest
+            $(Build.SourceVersion)
           arguments: --build-arg BUILDKIT_INLINE_CACHE=1
 
       - task: Docker@2
@@ -144,18 +167,20 @@ jobs:
           containerRegistry: dockerhub
           tags: |
             latest
+            $(Build.SourceVersion)
 
       - task: Docker@2
         displayName: Build front-end image
         inputs:
           command: build
           repository: acctext/frontend
-          dockerfile: front-end/Dockerfile.builder
+          dockerfile: front-end/Dockerfile
           containerRegistry: dockerhub
           buildContext: .
           tags: |
             latest
-          arguments: --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg ACC_TEXT_API_URL="http://localhost:3001" --build-arg ACC_TEXT_GRAPHQL_URL="http://localhost:3001/_graphql" --build-arg ACC_TEXT_DATA_FILES_BUCKET="http://localhost:3001/accelerated-text-data-files"
+            $(Build.SourceVersion)
+          arguments: --build-arg BUILDKIT_INLINE_CACHE=1 
 
       - task: Docker@2
         displayName: Push front-end image
@@ -165,6 +190,7 @@ jobs:
           containerRegistry: dockerhub
           tags: |
             latest
+            $(Build.SourceVersion)
 
       - task: Docker@2
         displayName: Build api image
@@ -176,6 +202,7 @@ jobs:
           buildContext: .
           tags: |
             latest
+            $(Build.SourceVersion)
           arguments: --build-arg BUILDKIT_INLINE_CACHE=1
 
       - task: Docker@2
@@ -187,6 +214,7 @@ jobs:
           buildContext: .
           tags: |
             latest
+            $(Build.SourceVersion)
 
       - task: Docker@2
         displayName: Build gf image
@@ -197,6 +225,7 @@ jobs:
           containerRegistry: dockerhub
           tags: |
             latest
+            $(Build.SourceVersion)
           arguments: --build-arg BUILDKIT_INLINE_CACHE=1
 
       - task: Docker@2
@@ -207,3 +236,4 @@ jobs:
           containerRegistry: dockerhub
           tags: |
             latest
+            $(Build.SourceVersion)

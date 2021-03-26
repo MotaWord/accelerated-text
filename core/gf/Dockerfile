@@ -2,7 +2,7 @@ FROM haskell:8.8.3
 
 RUN apt-get update && apt-get install wget python libtinfo5 -y
 
-RUN curl https://bootstrap.pypa.io/2.7/get-pip.py | python
+RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py | python
 
 RUN pip install backports.tempfile gunicorn pytest
 
@@ -14,4 +14,4 @@ RUN mkdir /grammars && gf --output-dir=/grammars -n LangEng -make alltenses/Lang
 ADD *.py ./
 ADD test_grammars test_grammars/
 
-CMD ["gunicorn", "-b 0.0.0.0:8000", "server"]
+CMD ["gunicorn", "-b 0.0.0.0:8000", "server", "--access-logfile", "-", "--error-logfile", "-"]

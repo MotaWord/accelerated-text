@@ -1,8 +1,12 @@
 (ns acc-text.nlg.semantic-graph.utils
   (:require [acc-text.nlg.semantic-graph :as sg]
             [clojure.set :as set]
+            [clojure.string :as str]
             [ubergraph.core :as uber])
   (:import (java.util UUID)))
+
+(defn gen-id []
+  (str (UUID/randomUUID)))
 
 (defn find-descendant-ids [{relations ::sg/relations} ids]
   (let [relation-map (group-by :from relations)]
@@ -20,8 +24,11 @@
          (:to)
          (get concept-map))))
 
-(defn find-root [{::sg/keys [concepts]}]
-  (some #(when (= :document-plan (:type %)) %) concepts))
+(defn find-root [{::sg/keys [concepts relations]}]
+  (first (set/difference (set (map :id concepts)) (set (map :to relations)))))
+
+(defn get-operation-label [module name args category]
+  (format "%s.%s/%s" module name (str/join "->" (conj (vec args) category))))
 
 (defn get-children [{::sg/keys [concepts relations]} {id :id}]
   (let [concept-map (zipmap (map :id concepts) concepts)]
@@ -61,8 +68,11 @@
                                                   relations))))
 
 (defn prune-unrelated-branches [{::sg/keys [concepts relations] :as semantic-graph}]
-  (prune-branches semantic-graph (set/difference (into #{} (map :id (remove #(= :document-plan (:type %)) concepts)))
-                                                 (into #{} (map :to relations)))))
+  (let [{root-concept-id :id}
+        (or (some #(when (= :document-plan (:type %)) %) concepts)
+            (first (sort-by :position concepts)))]
+    (prune-branches semantic-graph (set/difference (into #{} (map :id (remove #(= root-concept-id (:id %)) concepts)))
+                                                   (into #{} (map :to relations))))))
 
 (defn find-terminal-concepts
   ([semantic-graph]

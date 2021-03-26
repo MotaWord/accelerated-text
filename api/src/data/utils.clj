@@ -3,9 +3,11 @@
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [jsonista.core :as json])
-  (:import (java.io File PushbackReader)
+  (:import (clojure.lang PersistentHashSet)
+           (java.io File PushbackReader)
            (java.util UUID)
-           (java.time Instant)))
+           (java.time Instant)
+           (org.apache.commons.codec.digest MurmurHash3)))
 
 (def char-list (map char (concat (range 65 91) (range 97 123))))
 
@@ -24,6 +26,7 @@
 (defn read-edn [^File f]
   (with-open [rdr (io/reader f)]
     (edn/read (PushbackReader. rdr))))
+
 
 (defn read-csv [^File f]
   (with-open [reader (io/reader f)]
@@ -49,11 +52,27 @@
     (cond-> filename
             (not= index -1) (subs 0 index))))
 
-(defn list-files [path]
-  (some->> path
-           (io/file)
-           (file-seq)
-           (filter #(.isFile ^File %))))
+(defn file-with-ext
+  [^File f ^PersistentHashSet ext]
+  (and (some? f) (.isFile f)
+       (or (empty? ext)
+           (contains? ext (get-ext f)))))
+
+(defn list-files
+  ([path] (list-files path #{}))
+  ([path ^PersistentHashSet ext]
+   (some->> path
+            (io/file)
+            (file-seq)
+            (filter #(file-with-ext % ext)))))
+
+(defn list-files-in-dir
+  ([path] (list-files-in-dir path #{}))
+  ([path ^PersistentHashSet ext]
+   (some->> path
+            (io/file)
+            (.listFiles)
+            (filter #(file-with-ext % ext)))))
 
 (defn list-directories [path]
   (some->> path
@@ -67,3 +86,5 @@
                (assoc ns-m (keyword ns (name k)) v))
              {}
              m))
+
+(defn murmur-hash [key] (first (MurmurHash3/hash128x64 (.getBytes key))))

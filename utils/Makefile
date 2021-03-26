@@ -1,2 +1,5 @@
-generate-from-csv:
-	clojure -m utils.generate "$(doc-plan)" "$(data-file)" "$(output-file)" "$(language)"
+print-document-plan:
+	clojure -M:dp print-plan $(dp)
+
+export-all-document-plans:
+	clojure -M:dp export-plans $(dir)
