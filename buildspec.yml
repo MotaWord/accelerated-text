@@ -33,7 +33,7 @@ phases:
       - cd ./api
       - docker build -f extend.Dockerfile -t $API_REPOSITORY_URI:${DEFAULT_IMAGE_TAG:=latest} -t $API_REPOSITORY_URI:${COMMIT_TAG:=latest} --build-arg BUILDKIT_INLINE_CACHE=1 .
       - cd ../
-      - docker build -f front-end/Dockerfile.builder -t $FRONTEND_REPOSITORY_URI:${DEFAULT_IMAGE_TAG:=latest} -t $FRONTEND_REPOSITORY_URI:${COMMIT_TAG:=latest} --build-arg BUILDKIT_INLINE_CACHE=${BUILDKIT_INLINE_CACHE:=1} --build-arg ACC_TEXT_API_URL=${ACC_TEXT_API_URL:=http://localhost:3001} --build-arg ACC_TEXT_GRAPHQL_URL=${ACC_TEXT_GRAPHQL_URL:=http://localhost:3001/_graphql} --build-arg ACC_TEXT_DATA_FILES_BUCKET=${ACC_TEXT_DATA_FILES_BUCKET:=http://localhost:3001/accelerated-text-data-files} .
+      - docker build -f front-end/Dockerfile -t $FRONTEND_REPOSITORY_URI:${DEFAULT_IMAGE_TAG:=latest} -t $FRONTEND_REPOSITORY_URI:${COMMIT_TAG:=latest} --build-arg BUILDKIT_INLINE_CACHE=${BUILDKIT_INLINE_CACHE:=1} --build-arg ACC_TEXT_API_URL=${ACC_TEXT_API_URL:=http://localhost:3001} --build-arg ACC_TEXT_GRAPHQL_URL=${ACC_TEXT_GRAPHQL_URL:=http://localhost:3001/_graphql} --build-arg ACC_TEXT_DATA_FILES_BUCKET=${ACC_TEXT_DATA_FILES_BUCKET:=http://localhost:3001/accelerated-text-data-files} .
   post_build:
     commands:
       - echo Builds completed on `date`
