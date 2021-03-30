@@ -1,11 +1,14 @@
 (ns acc-text.nlg.graph.data
   (:require [acc-text.nlg.graph.utils :refer [find-nodes get-in-edge]]
-            [loom.attr :refer [attrs]]))
+            [loom.attr :refer [attrs]]
+            [clojure.tools.logging :as log]))
 
 (defn get-data [data key]
   (if (contains? data key)
     (get data key)
-    (throw (Exception. (format "Missing value for data cell: `%s`" key)))))
+    (do
+      (log/error (format "Missing value for data cell: `%s`" key))
+      (""))
 
 (defn find-data-category [g node-id]
   (let [edge-attrs (->> node-id (get-in-edge g) (attrs g))
